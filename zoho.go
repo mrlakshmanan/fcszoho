@@ -103,6 +103,29 @@ type UpdateTicketDetails struct {
 	AssigneeId   string
 }
 
+//--------------------------------------------------------------
+// struct to capture ticket details from zoho rest API
+//--------------------------------------------------------------
+type TicketDetailsResponse struct {
+	Id           string `json:"id"`
+	TicketNumber string `json:"ticketNumber"`
+	ModifiedTime string `json:"modifiedTime"`
+	ClosedTime   string `json:"closedTime"`
+	DepartmentId string `json:"departmentId"`
+	AssigneeId   string `json:"assigneeId"`
+	IsDeleted    bool   `json:"isDeleted"`
+	Status       string `json:"status"`
+	ErrorMsg     string `json:"message"`
+	Assignee     struct {
+		FirstName string `json:"firstName"`
+		LastName  string `json:"lastName"`
+	}
+	Cf struct {
+		Cf_reason       string `json:"cf_reason"`
+		Cf_reminderdate string `json:"cf_reminderdate"`
+	}
+}
+
 //-------------------------------------------------
 //function return Auth Token based on a refresh token
 //-------------------------------------------------
@@ -344,6 +367,39 @@ func UpdateTicketMove(authtoken string, orgID string, ticket UpdateTicketDetails
 	client := &http.Client{}
 	response, err := client.Do(reqs)
 	log.Println(response)
+
+	if err != nil {
+		return v_Response, fmt.Errorf("The HTTP request failed with error :", err)
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		//log.Println(string(data))
+		if string(data) != "" {
+			err = json.Unmarshal([]byte(data), &v_Response)
+			if err != nil {
+				return v_Response, fmt.Errorf("The Json request failed with error : ", err)
+			}
+		}
+		return v_Response, nil
+
+	}
+
+}
+
+//-------------------------------------------------
+//function gets ticket details from zoho
+//-------------------------------------------------
+func GetTicketDetails(authtoken string, orgID string, ticketid string) (TicketDetailsResponse, error) {
+	v_Response := TicketDetailsResponse{}
+
+	urla := "https://desk.zoho.com/api/v1/tickets/" + ticketid + "?include=assignee,departments"
+
+	reqs, err := http.NewRequest("GET", urla, nil)
+	reqs.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	reqs.Header.Add("orgId", orgID)
+	reqs.Header.Add("Authorization", "Zoho-oauthtoken "+authtoken)
+
+	client := &http.Client{}
+	response, err := client.Do(reqs)
 
 	if err != nil {
 		return v_Response, fmt.Errorf("The HTTP request failed with error :", err)
