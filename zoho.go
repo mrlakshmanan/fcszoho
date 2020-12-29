@@ -98,9 +98,13 @@ type UpdateTicketResponse struct {
 }
 
 type UpdateTicketDetails struct {
-	TicketId     string
-	DepartmentId string
-	AssigneeId   string
+	ContactId    string `json:"contactId"`
+	TicketId     string `json:"ticketId"`
+	DepartmentId string `json:"departmentId"`
+	AssigneeId   string `json:"assigneeId"`
+	Description  string `json:"description"`
+	Subject      string `json:"subject"`
+	Id           string `json:"id"`
 }
 
 //--------------------------------------------------------------
@@ -110,6 +114,8 @@ type TicketDetailsResponse struct {
 	Id           string `json:"id"`
 	TicketNumber string `json:"ticketNumber"`
 	ModifiedTime string `json:"modifiedTime"`
+	CreatedTime  string `json:"createdTime"`
+	StatusType   string `json:"statusType"`
 	ClosedTime   string `json:"closedTime"`
 	DepartmentId string `json:"departmentId"`
 	AssigneeId   string `json:"assigneeId"`
@@ -309,8 +315,50 @@ func UpdateTicketStatus(authtoken string, orgID string, ticketID string, status 
 //-------------------------------------------------
 //function update ticket
 //-------------------------------------------------
-func UpdateTicketAgent(authtoken string, orgID string, ticket UpdateTicketDetails) (UpdateTicketResponse, error) {
-	v_Response := UpdateTicketResponse{}
+func CreateTicket(authtoken string, orgID string, ticket UpdateTicketDetails) (TicketDetailsResponse, error) {
+	v_Response := TicketDetailsResponse{}
+
+	urla := "https://desk.zoho.com/api/v1/tickets"
+
+	postBody, _ := json.Marshal(map[string]string{
+		"contactId":    ticket.ContactId,
+		"subject":      ticket.Subject,
+		"description":  ticket.Description,
+		"assigneeId":   ticket.AssigneeId,
+		"departmentId": ticket.DepartmentId,
+	})
+	postJsonBody := bytes.NewBuffer(postBody)
+
+	reqs, err := http.NewRequest("POST", urla, postJsonBody)
+	reqs.Header.Add("Content-Type", "application/json")
+	reqs.Header.Add("orgId", orgID)
+	reqs.Header.Add("Authorization", "Zoho-oauthtoken "+authtoken)
+
+	client := &http.Client{}
+	response, err := client.Do(reqs)
+
+	if err != nil {
+		return v_Response, fmt.Errorf("The HTTP request failed with error :", err)
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		//log.Println(string(data))
+		if string(data) != "" {
+			err = json.Unmarshal([]byte(data), &v_Response)
+			if err != nil {
+				return v_Response, fmt.Errorf("The Json request failed with error : ", err)
+			}
+		}
+		return v_Response, nil
+
+	}
+
+}
+
+//-------------------------------------------------
+//function update ticket
+//-------------------------------------------------
+func UpdateTicketAgent(authtoken string, orgID string, ticket UpdateTicketDetails) (TicketDetailsResponse, error) {
+	v_Response := TicketDetailsResponse{}
 
 	urla := "https://desk.zoho.com/api/v1/tickets/" + ticket.TicketId
 
@@ -349,8 +397,8 @@ func UpdateTicketAgent(authtoken string, orgID string, ticket UpdateTicketDetail
 //-------------------------------------------------
 //function update ticket
 //-------------------------------------------------
-func UpdateTicketMove(authtoken string, orgID string, ticket UpdateTicketDetails) (UpdateTicketResponse, error) {
-	v_Response := UpdateTicketResponse{}
+func UpdateTicketMove(authtoken string, orgID string, ticket UpdateTicketDetails) (TicketDetailsResponse, error) {
+	v_Response := TicketDetailsResponse{}
 
 	urla := "https://desk.zoho.com/api/v1/tickets/" + ticket.TicketId + "/move"
 
