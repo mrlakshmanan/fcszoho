@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -414,7 +413,7 @@ func UpdateTicketMove(authtoken string, orgID string, ticket UpdateTicketDetails
 
 	client := &http.Client{}
 	response, err := client.Do(reqs)
-	log.Println(response)
+	//log.Println(response)
 
 	if err != nil {
 		return v_Response, fmt.Errorf("The HTTP request failed with error :", err)
